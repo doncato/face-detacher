@@ -17,33 +17,38 @@ import sys
 # Additional libraries
 import cv2
 
+cascades = (
+    'data/harcascade_frontalface_default.xml',
+    'data/harcascade_eye.xml',
+    'data/',
+)
+
 def get_envargs():
     image_path = sys.argv[1]
-    casc_path = sys.argv[2]
-    return (image_path, casc_path)
+    return (image_path)
 
 
 def main():
     args = get_envargs()
-    faceCascade = cv2.CascadeClassifier(args[1])
-    print(faceCascade.empty())
+    faceCascade = cv2.CascadeClassifier(cascades[0])
+    #print(faceCascade.empty())
 
     image = cv2.imread(args[0])
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     faces = faceCascade.detectMultiScale(
         gray,
-        scaleFactor=1.1,
+        scaleFactor=1.2,
         minNeighbors=5,
-        minSize=(30, 30),
+        minSize=(21, 21),
     )
+
     print(f"{len(faces)} Faces detected")
 
     for (x, y, w, h) in faces:
         cv2.rectangle(image, (x,y), (x+w, y+h), (0,255, 0), 2)
 
-    cv2.imshow("Faces found", image)
-    cv2.waitKey(0)
+    cv2.imwrite("output/out.png", image)
 
 
 
