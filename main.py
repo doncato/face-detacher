@@ -21,7 +21,7 @@ import numpy as np
 cascades = (
     'data/haarcascade_frontalface_default.xml',
     'data/haarcascade_eye.xml',
-    'data/',
+    'data/haarcascade_frontalface_alt.xml',
 )
 
 
@@ -48,10 +48,12 @@ class censor_handling():
         return res
 
 def rect_is_same(rect, q):
-    for e in rect:
-        for e_q in rect:
-            if e != e_q:
-                return False
+    if len(rect) != len(q):
+        return False
+    for i in range(len(rect)):
+        if rect[i] != q[i]:
+            return False
+
     return True
 
 def rect_contains(rect, q):
@@ -67,6 +69,30 @@ def rect_contains(rect, q):
         return True
     return False
 
+def rect_fully_contains(rect, q):
+    (x, y, h, w,) = rect
+    (x_q, y_q, h_q, w_q) = q
+    if (h_q >= h or w_q >= w):
+        return False
+    elif (x_q >= x and y_q >= y and (x_q+w_q) <= (x+w) and (y_q+h_q) <= (y+h)):
+        return True
+
+    return False
+
+def simplify_rects(rects):
+    filter_array = []
+    for rect in rects:
+        l = len(filter_array)
+        for other in rects:
+            if rect_is_same(rect, other):
+                continue
+            if rect_fully_contains(other, rect):
+                filter_array.append(False)
+                break
+        if len(filter_array) == l:
+            filter_array.append(True)
+
+    return rects[filter_array]
 
 def censor_eyes(eyes, faces):
         eye_pairs = []
@@ -105,7 +131,6 @@ def main():
     args = get_envargs()
     faceCascade = cv2.CascadeClassifier(cascades[0])
     eyeCascade = cv2.CascadeClassifier(cascades[1])
-    #print(faceCascade.empty())
 
     image = cv2.imread(args)
     og_image = cv2.imread(args)
@@ -113,8 +138,11 @@ def main():
 
     handler = censor_handling()
 
-    faces = handler.get_objs(gray, faceCascade)
-    eyes = handler.get_objs(gray, eyeCascade)
+    raw_faces = handler.get_objs(gray, faceCascade)
+    raw_eyes = handler.get_objs(gray, eyeCascade)
+
+    faces = simplify_rects(raw_faces)
+    eyes = simplify_rects(raw_eyes)
 
     print(f"{len(faces)}/{len(eyes)} Faces/Eyes detected")
     for (x, y, w, h) in faces:
