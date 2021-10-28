@@ -117,12 +117,12 @@ def simplify_rects(rects):
     return rects[filter_array]
 
 def censor_eyes(eyes, faces):
-    """
-    This function takes the detected eyes and faces and returns a list of
-    rectangles to cover the detected eyes.
-    *IMPORTANT!* The returned rectangles are defined by 2 positions rather
-    than 1 position + height + width!!
-    """
+        """
+        This function takes the detected eyes and faces and returns a list of
+        rectangles to cover the detected eyes.
+        *IMPORTANT!* The returned rectangles are defined by 2 positions rather
+        than 1 position + height + width!!
+        """
         eye_pairs = []
         for face in faces:
             (x_f, y_f, w_f, h_f) = face
