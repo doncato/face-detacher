@@ -3,7 +3,7 @@ Quickly 'anonymize' all people in an image. This script will put a black bar ove
 
 This is a small python script to detect and censor all eyepairs in an image.
 
-Feel free to use this script if you think it's helpfull (and feel free to attribute me).
+Feel free to use this script if you think it's helpful (and feel free to attribute me).
 
 You can also contribute to this by forking this repository and making a pull request if you want to help.
 
