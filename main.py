@@ -32,7 +32,7 @@ def get_envargs():
 
 class censor_handling():
     def __init__(self):
-        self.scales = [1.1, 1.25, 1.5, 2]
+        self.scales = [1.2, 1.35, 1.5, 1.65, 1.8]
 
     def get_objs(self, gray_img, cascade):
         res = np.array(np.empty(shape=(0, 4), dtype='i'))
@@ -41,34 +41,31 @@ class censor_handling():
                 gray_img,
                 scaleFactor=scale,
                 minNeighbors=5,
-                minSize=(64, 64),
+                minSize=(16, 16),
             )
             if type(objs) == np.ndarray and objs.ndim == res.ndim:
                 res = np.append(res, objs, axis=0)
         return res
 
+def rect_is_same(rect, q):
+    for e in rect:
+        for e_q in rect:
+            if e != e_q:
+                return False
+    return True
+
 def rect_contains(rect, q):
     (x, y, h, w) = rect
     (x_q, y_q, h_q, w_q) = q
-    q_center = (x + w/2, y+ h/2)
+    q_center = (x_q + w_q/2, y_q + h_q/2)
     if (
         q_center[0] > x
         and q_center[0] < (x+w)
         and q_center[1] > y
         and q_center[1] < (y+h)
     ):
-        return true
-    return false
-
-
-def remove_contained_rects(rectangles):
-    important_rects = rectangles.tolist()
-    for rect in rectangles:
-        for other in rectangles:
-            if rect_contains(rect, other):
-                important_rects.remove(other)
-
-    return important_rects
+        return True
+    return False
 
 
 def censor_eyes(eyes, faces):
@@ -125,7 +122,7 @@ def main():
     for (x, y, w, h) in eyes:
         cv2.rectangle(image, (x, y), (x+w, y+h), (255, 0, 255), 2)
 
-    for (x, y, a, b) in handler.censor_eyes(eyes, faces):
+    for (x, y, a, b) in censor_eyes(eyes, faces):
         cv2.rectangle(og_image, (x,y), (a,b), (0,0,0,), -1)
 
 
