@@ -13,50 +13,65 @@
 ## + OpenCV
 
 # Default libraries
-import sys
+import sys,time
 # Additional libraries
 import cv2
 import numpy as np
 
+# These are the paths to the cascade xml files for the script to use
 cascades = (
     'data/haarcascade_frontalface_default.xml',
     'data/haarcascade_eye.xml',
-    'data/haarcascade_frontalface_alt.xml',
 )
 
 
 def get_envargs():
+    """
+    This is a small function to get the image path from the command line
+    """
     image_path = sys.argv[1]
     return image_path
-
 
 class censor_handling():
     def __init__(self):
         self.scales = [1.2, 1.35, 1.5, 1.65, 1.8]
 
     def get_objs(self, gray_img, cascade):
+        """
+        Get the objects of the given grayscale image (gray_img) via the given
+        cascade. This will iterate over multiple settings therefore one object
+        might be detected multiple times
+        """
         res = np.array(np.empty(shape=(0, 4), dtype='i'))
         for scale in self.scales:
             objs = cascade.detectMultiScale(
                 gray_img,
                 scaleFactor=scale,
                 minNeighbors=5,
-                minSize=(16, 16),
+                minSize=(32, 32),
             )
             if type(objs) == np.ndarray and objs.ndim == res.ndim:
                 res = np.append(res, objs, axis=0)
         return res
 
 def rect_is_same(rect, q):
+    """
+    Check if 2 given rectangles are the exact same
+    (Same size and position).
+    Returns True/False
+    """
     if len(rect) != len(q):
         return False
     for i in range(len(rect)):
         if rect[i] != q[i]:
             return False
-
     return True
 
 def rect_contains(rect, q):
+    """
+    Returns True if the center of the rectangle q is inside of the rectangle
+    rect. Otherwise False is returned.
+    """
     (x, y, h, w) = rect
     (x_q, y_q, h_q, w_q) = q
     q_center = (x_q + w_q/2, y_q + h_q/2)
@@ -70,16 +85,23 @@ def rect_contains(rect, q):
     return False
 
 def rect_fully_contains(rect, q):
+    """
+    Returns True if the rectangle q can fully fit into the rectangle rect.
+    Otherwise False is returned
+    """
     (x, y, h, w,) = rect
     (x_q, y_q, h_q, w_q) = q
     if (h_q >= h or w_q >= w):
         return False
     elif (x_q >= x and y_q >= y and (x_q+w_q) <= (x+w) and (y_q+h_q) <= (y+h)):
         return True
-
     return False
 
 def simplify_rects(rects):
+    """
+    This function will get rid of redundant rectangle by basically calling the
+    rect_fully_contains function.
+    """
     filter_array = []
     for rect in rects:
         l = len(filter_array)
@@ -95,6 +117,12 @@ def simplify_rects(rects):
     return rects[filter_array]
 
 def censor_eyes(eyes, faces):
+    """
+    This function takes the detected eyes and faces and returns a list of
+    rectangles to cover the detected eyes.
+    *IMPORTANT!* The returned rectangles are defined by 2 positions rather
+    than 1 position + height + width!!
+    """
         eye_pairs = []
         for face in faces:
             (x_f, y_f, w_f, h_f) = face
@@ -126,14 +154,12 @@ def censor_eyes(eyes, faces):
 
         return rectangles
 
-
 def main():
     args = get_envargs()
     faceCascade = cv2.CascadeClassifier(cascades[0])
     eyeCascade = cv2.CascadeClassifier(cascades[1])
 
     image = cv2.imread(args)
-    og_image = cv2.imread(args)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     handler = censor_handling()
@@ -145,17 +171,20 @@ def main():
     eyes = simplify_rects(raw_eyes)
 
     print(f"{len(faces)}/{len(eyes)} Faces/Eyes detected")
+    for (x, y, a, b) in censor_eyes(eyes, faces):
+        cv2.rectangle(image, (x,y), (a,b), (0,0,0,), -1)
+    cv2.imwrite("output/out.png", image)
+
+    ''' This is for debbuging purposes.
     for (x, y, w, h) in faces:
         cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
     for (x, y, w, h) in eyes:
         cv2.rectangle(image, (x, y), (x+w, y+h), (255, 0, 255), 2)
-
-    for (x, y, a, b) in censor_eyes(eyes, faces):
-        cv2.rectangle(og_image, (x,y), (a,b), (0,0,0,), -1)
-
-
     cv2.imwrite("output/debug_out.png", image)
-    cv2.imwrite("output/out.png", og_image)
+    '''
+
 
 if __name__ == "__main__":
+    start = time.time()
     main()
+    print(f"{time.time() - start} seconds")
